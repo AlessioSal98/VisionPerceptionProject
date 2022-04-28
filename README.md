@@ -16,6 +16,7 @@ In order to proceed with the train, it is necessary to run the main.py file by s
 * optimizer
 * learning_rate
 * validation_size  
+ 
 Eg: !run main.py --num_classes 10 --epochs 10 --batch_size 4 --criterion 'CrossEntropy' --optimizer 'SGD' --learning_rate 0.001 --validation_size 0.2  
 
 After the training, a new folder in Saves will be created and it will contain the following files:
