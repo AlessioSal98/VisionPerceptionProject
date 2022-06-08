@@ -69,6 +69,21 @@ def load(name):
     array = np.load(f)
   return array
 
+'''
+def split(X,y,percentage):
+  if(X.shape[0]==y.shape[0]):
+    perm = np.random.permutation(len(X))
+    X=X[perm]
+    y=y[perm]
+    first_half = int(X.shape[0]*(1-percentage))
+
+    X_1 = X[0:first_half]
+    y_1 = y[0:first_half]
+    X_2 = X[first_half:X.shape[0]]
+    y_2 = y[first_half:y.shape[0]]
+  return X_1, y_1 , X_2, y_2
+'''
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Dataset Parameters')
     parser.add_argument('--data_folder_name', dest='data_folder_name', type=str, help='Name of the class that will contain the data')
@@ -139,3 +154,15 @@ if __name__ == "__main__":
     video_labels = video_labels.cpu().detach().numpy()
 
     unique, counts = np.unique(video_labels, return_counts=True)
+
+    '''
+    X_train, y_train , X_test, y_test = split(video_names,video_labels,0.2)
+    X_train, y_train , X_val, y_val = split(X_train,y_train,0.3)
+
+    save(X_train,save_path+'X_train.npy')
+    save(y_train,save_path+'y_train.npy')
+    save(X_val,save_path+'X_val.npy')
+    save(y_val,save_path+'y_val.npy')
+    save(X_test,save_path+'X_test.npy')
+    save(y_test,save_path+'y_test.npy')
+    '''
