@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import utils
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
 import numpy as np

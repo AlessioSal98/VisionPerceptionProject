@@ -1,4 +1,3 @@
-import utils 
 import trainer
 from tqdm import tqdm
 #import network
