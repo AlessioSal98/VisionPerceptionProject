@@ -16,13 +16,15 @@ from sklearn.metrics import accuracy_score
 import argparse
 from datetime import datetime
 from matplotlib import pyplot as plt
+import glob
+
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print(f'Using {device} device')
 
-def split(X,y,percentage):
+def split(X,y,percentage,seed):
   if(X.shape[0]==y.shape[0]):
-    perm = np.random.permutation(len(X))
+    perm = np.random.RandomState(seed=seed).permutation(len(X))
     X=X[perm]
     y=y[perm]
     first_half = int(X.shape[0]*(1-percentage))
@@ -114,14 +116,24 @@ def train(args):
   y = F.one_hot(y)
   
   y = y.cpu().detach().numpy()
-  X_train, y_train, X_val, y_val = split(X,y,0.2)
+  X_train, y_train, X_val, y_val = split(X,y,0.2,args.split_seed)
 
   
 
   #Model definition
   #model = network.Net(n_classes,merge_type).to(device)
+
+  
   n_frames = torch.load(data_folder_name+'/'+X_train[0]).shape[0]
-  model = networkRNN.netRNN(n_frames=n_frames,n_classes=n_classes)
+
+  #START
+  try:
+    model = torch.load('Checkpoint/Model.pth')
+  except:
+    model = networkRNN.netRNN(n_frames=n_frames,n_classes=n_classes)
+  #END
+  
+  
   
   start_time = datetime.now().replace(microsecond=0)
   
@@ -137,13 +149,12 @@ def train(args):
   print('Start time: ', start_time)
   print('#########################################################')
 
-  history = trainer.train(model, X_train, y_train , X_val, y_val,
+  history,training_time = trainer.train(model, X_train, y_train , X_val, y_val,
                                             data_folder_name,
                                             n_classes, optimizer, epochs=epochs , 
                                             batch_size=batch_size, validation_size=validation_size,
                                             learning_rate=learning_rate,noise=noise)
-  end_time = datetime.now().replace(microsecond=0)
-  training_time = end_time-start_time
+  print(training_time)
   save(model,args,classes,history,training_time)
 
 if __name__ == "__main__":
@@ -159,7 +170,14 @@ if __name__ == "__main__":
     #parser.add_argument('--classes', dest='classes', type=str, help='Class List written in the form: class1-class2-class3...')
     parser.add_argument('--data_folder_name', dest='data_folder_name', type=str, help='The name of the folder wich contains the train data')
     parser.add_argument('--noise', dest='noise', type=float, help='Define the value of the salt and pepper noise')
+    parser.add_argument('--restart_from_checkpoint', dest='restart_from_checkpoint', type=str, help='[True/False] Allow the training to be restarted from the checkpoint')
+    parser.add_argument('--split_seed', dest='split_seed', type=int, help='Integer number that identifies the split seed')
     args = parser.parse_args()
+    if(args.restart_from_checkpoint == 'False'):
+      files = glob.glob('Checkpoint/*')
+      for f in files:
+         os.remove(f)
+
     train(args)
 
 

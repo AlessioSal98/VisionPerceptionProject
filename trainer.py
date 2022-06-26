@@ -8,7 +8,8 @@ import torchvision.models as models
 from sklearn.metrics import accuracy_score
 from tqdm import tqdm
 from skimage.util import random_noise
-
+import os
+from datetime import datetime,timedelta
 
 UCF_ROOT = "https://www.crcv.ucf.edu/THUMOS14/UCF101/UCF101/"
 
@@ -23,16 +24,43 @@ def train(model , X_train, y_train , X_val, y_val,data_folder_name,n_classes ,op
   epochs = epochs
   batch_size= batch_size
 
+
   train_accuracy_history = []
   val_accuracy_history = []
   train_loss_history = []
   val_loss_history = []
-  train_accuracy_history.append(0)
-  val_accuracy_history.append(0)
-  train_loss_history.append(0)
-  val_loss_history.append(0)
 
-  for epoch in range(epochs):
+  
+
+
+  try:
+    with open('Checkpoint/currentEpoch.txt', 'r') as f:
+      for line in f:
+        start_epoch = (int(line.strip()))
+  except:
+    start_epoch=0
+  print('Starting train from epoch:',start_epoch)
+
+  try:
+    with open('Checkpoint/currentTime.txt', 'r') as f:
+      for line in f:
+        t = datetime.strptime(line.strip(),"%H:%M:%S")
+        total_time = timedelta(hours=t.hour, minutes=t.minute, seconds=t.second)
+  except:
+    total_time = datetime.now().replace(microsecond=0)-datetime.now().replace(microsecond=0)
+  #print(total_time)
+  train_accuracy_history = load_history('train_accuracy_history')
+  val_accuracy_history = load_history('val_accuracy_history')
+  train_loss_history = load_history('train_loss_history')
+  val_loss_history = load_history('val_loss_history')
+  #print(train_accuracy_history)
+  #print(val_accuracy_history)
+  #print(train_loss_history)
+  #print(val_loss_history)
+
+  for epoch in range(start_epoch,epochs):
+
+    start_time = datetime.now().replace(microsecond=0)
     #Train and Validation batches creation
     #Train Batches
     x_batches = []
@@ -66,11 +94,34 @@ def train(model , X_train, y_train , X_val, y_val,data_folder_name,n_classes ,op
     train_loss,train_accuracy = step(x_batches_train,y_batches_train,data_folder_name,n_classes,optimizer,criterion,model,noise,True)
     val_loss,val_accuracy = step(x_batches_val,y_batches_val,data_folder_name,n_classes,optimizer,criterion,model,noise,False)
 
+    
+
+
     train_accuracy_history.append(train_accuracy)
     val_accuracy_history.append(val_accuracy)
     train_loss_history.append(train_loss)
     val_loss_history.append(val_loss)
     
+    #START
+    end_time = datetime.now().replace(microsecond=0)
+    epoch_time = end_time-start_time
+    #print(epoch_time)
+    total_time = total_time+epoch_time
+    #print(total_time)
+
+    with open('Checkpoint/currentEpoch.txt', 'w') as f:
+      f.write(str(epoch+1))
+    with open('Checkpoint/currentTime.txt', 'w') as f:
+      f.write(str(total_time))
+    torch.save(model, 'Checkpoint/Model.pth')
+    save_history('train_accuracy_history',train_accuracy_history)
+    save_history('val_accuracy_history',val_accuracy_history)
+    save_history('train_loss_history',train_loss_history)
+    save_history('val_loss_history',val_loss_history)
+
+    
+    #END
+
     print('Epoch {} of {}, Train Loss: {:.3f}, Validation Loss: {:.3f}, Train Accuracy: {:.5f}, Validation Accuracy: {:.5f}'.format(epoch+1, epochs, train_loss, val_loss, train_accuracy, val_accuracy))
   history = {
     'train_accuracy': train_accuracy_history,
@@ -81,6 +132,22 @@ def train(model , X_train, y_train , X_val, y_val,data_folder_name,n_classes ,op
 
 
   print('Finished Training')
+  return history,total_time
+
+def save_history(filename,history):
+  with open('Checkpoint/'+filename+'.txt', 'w') as f:
+    for i in history:
+      f.write(str(i)+'\n')
+
+def load_history(filename):
+  history = []
+  try:
+    with open('Checkpoint/'+filename+'.txt', 'r') as f:
+        lines = f.readlines()
+        for line in lines:
+          history.append(float(line))
+  except:
+    history.append(0)
   return history
 
 def step(x_batches,y_batches,data_folder_name,n_classes,optimizer,criterion,model,noise,isTrain):
