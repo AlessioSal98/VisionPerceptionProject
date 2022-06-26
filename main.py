@@ -128,7 +128,7 @@ def train(args):
 
   #START
   try:
-    model = torch.load('Checkpoint/Model.pth')
+    model = torch.load('Checkpoint/Model.pth').to(device)
   except:
     model = networkRNN.netRNN(n_frames=n_frames,n_classes=n_classes)
   #END
