@@ -20,8 +20,11 @@ In order to proceed with the train, it is necessary to run the main.py file by s
 * optimizer;
 * learning_rate;
 * validation_size.  
+* restart_from_checkpoint: if True, allows the training to continue from the last epoch in which it was interrupted
+* noise: determines the amount of noise that contaminates the image
+* split_seed: determines how the dataset is splitted
  
-Eg: !run main.py --data_folder_name FOLDER_NAME --epochs 30 --batch_size 4 --noise 0 --optimizer 'SGD' --learning_rate 0.001 --validation_size 0.2
+Eg: !run main.py --data_folder_name FOLDER_NAME --epochs 30 --batch_size 4 --noise 0 --restart_from_checkpoint True --split_seed 0 --optimizer 'SGD' --learning_rate 0.001 --validation_size 0.2
 
 ## Train results
 After the training, a new folder in Saves will be created and it will contain the following files:
