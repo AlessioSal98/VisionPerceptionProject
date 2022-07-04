@@ -18,6 +18,7 @@ import ssl
 import cv2
 from urllib import request 
 
+#Utils functions used for downloading the videos
 UCF_ROOT = "https://www.crcv.ucf.edu/THUMOS14/UCF101/UCF101/"
 _VIDEO_LIST = None
 _CACHE_DIR = tempfile.mkdtemp()
@@ -80,31 +81,25 @@ if __name__ == "__main__":
     n_frames = args.n_frames
     n_classes = len(classes)
 
-
+    #Creation of the folder
     save_path = (data_folder_name+'/')
     os.mkdir(save_path)
+
+    #Creation of a txt file inside the folder that contains the list of classes
     with open(save_path+'ClassList.txt', 'w') as f:
       f.write(str(classes))
     video_names = list_ucf_videos()
-    #video_names = sample(utils.list_ucf_videos(),dataset_size)
-    labels = []
-    for name in video_names:
-      labels.append(name.split('_')[1])
-    #classes = list(set(labels))[:n_classes]
-    print(classes)
 
+    #Filtering of the videos according to the required classes
     filtered_videos = []
     for video in video_names:
       if video.split('_')[1] in classes:
-      #if 'Archery' in video or 'Biking' in video or 'Drumming' in video or 'HorseRace' in video or 'Punch' in video:
         filtered_videos.append(video)
     
-    #print(filtered_videos)
     video_names = filtered_videos
     print(video_names)
     
-    #video_names = sample(video_names,dataset_size)
-
+    #Generation of the tensors
     for i in tqdm(range(len(video_names))):
       name = video_names[i].split('.avi')[0]
       tensor = load_video(UCF_ROOT+name,0)
@@ -119,22 +114,3 @@ if __name__ == "__main__":
 
       torch.save(tensor, save_path+name+'.pt')
     
-    videos = []
-    video_names = []
-    video_labels = []
-    for filename in os.listdir(save_path):
-        if filename.endswith("pt"): 
-            name = filename.split('.pt')[0]
-            video_labels.append(name.split('_')[1])
-            video_names.append(name)
-    
-    video_names = np.array(video_names)
-    #Label 1 hot encoding
-    le = preprocessing.LabelEncoder()
-    video_labels = le.fit_transform(video_labels)
-    video_labels = torch.from_numpy(video_labels)
-    video_labels = F.one_hot(video_labels)
-
-    video_labels = video_labels.cpu().detach().numpy()
-
-    unique, counts = np.unique(video_labels, return_counts=True)

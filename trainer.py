@@ -32,7 +32,7 @@ def train(model , X_train, y_train , X_val, y_val,data_folder_name,n_classes ,op
 
   
 
-
+  #Loading of the checkpoints (or start from 0 in case of no checkpoints available)
   try:
     with open('Checkpoint/currentEpoch.txt', 'r') as f:
       for line in f:
@@ -48,16 +48,14 @@ def train(model , X_train, y_train , X_val, y_val,data_folder_name,n_classes ,op
         total_time = timedelta(hours=t.hour, minutes=t.minute, seconds=t.second)
   except:
     total_time = datetime.now().replace(microsecond=0)-datetime.now().replace(microsecond=0)
-  #print(total_time)
+  
+  #Load of accuracies/losses according to the checkpoint
   train_accuracy_history = load_history('train_accuracy_history')
   val_accuracy_history = load_history('val_accuracy_history')
   train_loss_history = load_history('train_loss_history')
   val_loss_history = load_history('val_loss_history')
-  #print(train_accuracy_history)
-  #print(val_accuracy_history)
-  #print(train_loss_history)
-  #print(val_loss_history)
 
+  #Training start
   for epoch in range(start_epoch,epochs):
 
     start_time = datetime.now().replace(microsecond=0)
@@ -90,11 +88,9 @@ def train(model , X_train, y_train , X_val, y_val,data_folder_name,n_classes ,op
     x_batches_val = np.array(x_batches)
     y_batches_val = np.array(y_batches)
 
-    #Execution of the train and validation steps, with relative collection of the losses
+    #Execution of the train and validation steps, with the relative collection of the losses
     train_loss,train_accuracy = step(x_batches_train,y_batches_train,data_folder_name,n_classes,optimizer,criterion,model,noise,True)
     val_loss,val_accuracy = step(x_batches_val,y_batches_val,data_folder_name,n_classes,optimizer,criterion,model,noise,False)
-
-    
 
 
     train_accuracy_history.append(train_accuracy)
@@ -102,13 +98,12 @@ def train(model , X_train, y_train , X_val, y_val,data_folder_name,n_classes ,op
     train_loss_history.append(train_loss)
     val_loss_history.append(val_loss)
     
-    #START
+    #Computation of the time needed to complete the epoch and summing with the current total time
     end_time = datetime.now().replace(microsecond=0)
     epoch_time = end_time-start_time
-    #print(epoch_time)
     total_time = total_time+epoch_time
-    #print(total_time)
 
+    #Update of the checkpoint informations
     with open('Checkpoint/currentEpoch.txt', 'w') as f:
       f.write(str(epoch+1))
     with open('Checkpoint/currentTime.txt', 'w') as f:
@@ -119,10 +114,9 @@ def train(model , X_train, y_train , X_val, y_val,data_folder_name,n_classes ,op
     save_history('train_loss_history',train_loss_history)
     save_history('val_loss_history',val_loss_history)
 
-    
-    #END
-
+    #Print of the results of the current epoch
     print('Epoch {} of {}, Train Loss: {:.3f}, Validation Loss: {:.3f}, Train Accuracy: {:.5f}, Validation Accuracy: {:.5f}'.format(epoch+1, epochs, train_loss, val_loss, train_accuracy, val_accuracy))
+  #Generation of the history of accuracies and losses
   history = {
     'train_accuracy': train_accuracy_history,
     'val_accuracy': val_accuracy_history,
@@ -130,10 +124,10 @@ def train(model , X_train, y_train , X_val, y_val,data_folder_name,n_classes ,op
     'val_loss': val_loss_history
   }
 
-
   print('Finished Training')
   return history,total_time
 
+#Methods for save and load accuracies and validation histories
 def save_history(filename,history):
   with open('Checkpoint/'+filename+'.txt', 'w') as f:
     for i in history:
@@ -150,6 +144,7 @@ def load_history(filename):
     history.append(0)
   return history
 
+#Training/Evaluation step
 def step(x_batches,y_batches,data_folder_name,n_classes,optimizer,criterion,model,noise,isTrain):
   #Loss initialization
   total_loss = 0
@@ -161,40 +156,37 @@ def step(x_batches,y_batches,data_folder_name,n_classes,optimizer,criterion,mode
     model.train()
   else:
     model.eval()
+
+  #Iteration of the batches
   for i in tqdm(range(x_batches.shape[0])):
-    #print('X BATCH:', x_batches[i])
     x = []
     for elem in x_batches[i]:
       video = torch.load(data_folder_name+'/'+elem)
       x.append(torch.from_numpy(random_noise(video, mode='salt', amount=noise)))
-      #x.append(torch.load('Dataset/'+elem))
-      #x.append(torch.load('Dataset'+str(n_classes)+'Classes/'+elem+'.pt'))
     x = torch.stack(x,0).float().to(device)
-    #x = x/255
 
     
-    #x = x_batches[i]
     labels = torch.tensor(y_batches[i]).float().to(device)
 
-    # zero the parameter gradients
+    #Set to zero the parameter gradients
     optimizer.zero_grad()
 
-    # forward + backward + optimize
+    #Feeding the model with the input samples
     outputs = model(x)
+    #Computation of the loss according to the outputs
     loss = criterion(outputs, labels)
 
+    #Updating of the weights if the network is in training step
     if(isTrain==True):
       loss.backward()
       optimizer.step()
 
-    #total_loss = total_loss+loss
     losses.append(loss.item())
 
+    #Accuracy computation
     one_hot_encoded_outputs = one_hot_encode(outputs)
-
     y_pred = linearize(one_hot_encoded_outputs)
     y_true = linearize(labels)
-
     accuracy = accuracy_score(y_true,y_pred)
     accuracies.append(accuracy)
 
@@ -207,6 +199,7 @@ def step(x_batches,y_batches,data_folder_name,n_classes,optimizer,criterion,mode
 
   return avg_loss,avg_accuracy
 
+#Method that creates the one hot encode of the outputs of the network
 def one_hot_encode(x):
   hot_encoded = []
   for elem in x:
@@ -224,6 +217,7 @@ def linearize(x):
   res = np.array(res)
   return res
 
+#Method used for the optimized definition
 def get_optimizer(model,optimizer,learning_rate):
   if optimizer == 'Adam':
     return optim.Adam(model.parameters(), lr=learning_rate)
