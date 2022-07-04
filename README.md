@@ -7,6 +7,7 @@ The classification was made by using Resnet18 as feature extractor for the video
 Before proceding with the training, it is necessary to generate the samples that will be used.  
 In order to do that it is necessary to run the file dataset_handler.py with the following arguments:
 * data_folder_name: the name of the folder that will be created and that will contain the tensors of the videos;
+* classes: the list of classes separated by -
 * n_frames: how many frames will be collected from the videos
 
 Eg: !run dataset_handler.py --data_folder_name FOLDER_NAME --classes Biking-Surfing --n_frames 5
