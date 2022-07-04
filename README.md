@@ -12,7 +12,7 @@ In order to do that it is necessary to run the file dataset_handler.py with the 
 
 Eg: !run dataset_handler.py --data_folder_name FOLDER_NAME --classes Biking-Surfing --n_frames 5
 
-Once the file have been executed, it will take a while to generate all the tensor.
+Once the file have been executed, it will take a while to generate all the tensor. At the end of the process, you will find a new folder named FOLDER_NAME that will contain all the generated tensors.
 ## Train
 In order to proceed with the train, it is necessary to run the main.py file by specifing the following training parameters:  
 * data_folder_name: the program will automatically load the tensors in the specified folder and it will use them for the training;
